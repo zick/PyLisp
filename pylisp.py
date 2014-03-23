@@ -171,6 +171,11 @@ def eval1(obj, env):
         return eval1(safeCar(safeCdr(args)), env)
     elif op == makeSym('lambda'):
         return makeExpr(args, env)
+    elif op == makeSym('defun'):
+        expr = makeExpr(safeCdr(args), env)
+        sym = safeCar(args)
+        addToEnv(sym, expr, g_env)
+        return sym
     return apply(eval1(op, env), evlis(args, env), env)
 
 def evlis(lst, env):
