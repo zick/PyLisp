@@ -43,6 +43,16 @@ def makeExpr(args, env):
              'env': env }
 
 
+def nreverse(lst):
+    ret = kNil
+    while lst['tag'] == 'cons':
+        tmp = lst['cdr']
+        lst['cdr'] = ret
+        ret = lst
+        lst = tmp
+    return ret
+
+
 def isDelimiter(c):
     return c == kLPar or c == kRPar or c == kQuote or c.isspace()
 
@@ -70,14 +80,57 @@ def read(str):
     if str[0] == kRPar:
         return makeError('invalid syntax: %s' % str), ''
     elif str[0] == kLPar:
-        return makeError('noimpl'), ''
+        return readList(str[1:])
     elif str[0] == kQuote:
-        return makeError('noimpl'), ''
+        elm, next = read(str[1:])
+        return makeCons(makeSym('quote'), makeCons(elm, kNil)), next
     else:
         return readAtom(str)
 
+def readList(str):
+    ret = kNil
+    while True:
+        str = skipSpaces(str)
+        if str == '':
+            return makeError('unfinished parenthesis'), ''
+        elif str[0] == kRPar:
+            break
+        elm, next = read(str)
+        if elm['tag'] == 'error':
+            return elm
+        ret = makeCons(elm, ret)
+        str = next
+    return nreverse(ret), str[1:]
+
+def printObj(obj):
+    if obj['tag'] == 'num' or obj['tag'] == 'sym' or obj['tag'] == 'nil':
+        return str(obj['data'])
+    elif obj['tag'] == 'error':
+        return '<error: %s>' % obj['data']
+    elif obj['tag'] == 'cons':
+        return printList(obj)
+    elif obj['tag'] == 'subr':
+        return '<subr>'
+    elif obj['tag'] == 'expr':
+        return '<expr>'
+
+def printList(obj):
+    ret = ''
+    first = True
+    while obj['tag'] == 'cons':
+        if first:
+            ret = printObj(obj['car'])
+            first = False
+        else:
+            ret += ' ' + printObj(obj['car'])
+        obj = obj['cdr']
+    if obj['tag'] == 'nil':
+        return '(%s)' % ret
+    return '(%s . %s)' % (ret, printObj(obj))
+
 while True:
     try:
-        print read(raw_input())
+        exp, _ = read(raw_input())
+        print printObj(exp)
     except (EOFError):
         break
