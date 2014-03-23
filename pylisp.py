@@ -128,9 +128,37 @@ def printList(obj):
         return '(%s)' % ret
     return '(%s . %s)' % (ret, printObj(obj))
 
+def findVar(sym, env):
+    while env['tag'] == 'cons':
+        alist = env['car']
+        while alist['tag'] == 'cons':
+            if alist['car']['car'] == sym:
+                return alist['car']
+            alist = alist['cdr']
+        env = env['cdr']
+    return kNil
+
+g_env = makeCons(kNil, kNil)
+
+def addToEnv(sym, val, env):
+    env['car'] = makeCons(makeCons(sym, val), env['car'])
+
+
+def eval1(obj, env):
+    if obj['tag'] == 'nil' or obj['tag'] == 'num' or obj['tag'] == 'error':
+        return obj
+    elif obj['tag'] == 'sym':
+        bind = findVar(obj, env)
+        if bind == kNil:
+            return makeError('%s has no value' % obj['data'])
+        return bind['cdr']
+    return makeError('noimpl')
+
+addToEnv(makeSym('t'), makeSym('t'), g_env)
+
 while True:
     try:
         exp, _ = read(raw_input())
-        print printObj(exp)
+        print printObj(eval1(exp, g_env))
     except (EOFError):
         break
