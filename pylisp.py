@@ -226,14 +226,75 @@ def subrCdr(args):
 def subrCons(args):
     return makeCons(safeCar(args), safeCar(safeCdr(args)))
 
+def subrEq(args):
+    x = safeCar(args)
+    y = safeCar(safeCdr(args))
+    if x['tag'] == 'num' and y['tag'] == 'num':
+        if x['data'] == y['data']:
+            return makeSym('t')
+        return kNil
+    elif x is y:
+        return makeSym('t')
+    return kNil
+
+def subrAtom(args):
+    if safeCar(args)['tag'] == 'cons':
+        return kNil
+    return makeSym('t')
+
+def subrNumberp(args):
+    if safeCar(args)['tag'] == 'num':
+        return makeSym('t')
+    return kNil
+
+def subrSymbolp(args):
+    if safeCar(args)['tag'] == 'sym':
+        return makeSym('t')
+    return kNil
+
+def subrAddOrMul(fn, init_val):
+    def doit(args):
+        ret = init_val
+        while args['tag'] == 'cons':
+            if args['car']['tag'] != 'num':
+                return makeError('wrong type')
+            ret = fn(ret, args['car']['data'])
+            args = args['cdr']
+        return makeNum(ret)
+    return doit
+subrAdd = subrAddOrMul(lambda x, y: x + y, 0)
+subrMul = subrAddOrMul(lambda x, y: x * y, 1)
+
+def subrSubOrDivOrMod(fn):
+    def doit(args):
+        x = safeCar(args)
+        y = safeCar(safeCdr(args))
+        if x['tag'] != 'num' or y['tag'] != 'num':
+            return makeError('wrong type')
+        return makeNum(fn(x['data'], y['data']))
+    return doit
+subrSub = subrSubOrDivOrMod(lambda x, y: x - y)
+subrDiv = subrSubOrDivOrMod(lambda x, y: x / y)
+subrMod = subrSubOrDivOrMod(lambda x, y: x % y)
+
 
 addToEnv(makeSym('car'), makeSubr(subrCar), g_env)
 addToEnv(makeSym('cdr'), makeSubr(subrCdr), g_env)
 addToEnv(makeSym('cons'), makeSubr(subrCons), g_env)
+addToEnv(makeSym('eq'), makeSubr(subrEq), g_env)
+addToEnv(makeSym('atom'), makeSubr(subrAtom), g_env)
+addToEnv(makeSym('numberp'), makeSubr(subrNumberp), g_env)
+addToEnv(makeSym('symbolp'), makeSubr(subrSymbolp), g_env)
+addToEnv(makeSym('+'), makeSubr(subrAdd), g_env)
+addToEnv(makeSym('*'), makeSubr(subrMul), g_env)
+addToEnv(makeSym('-'), makeSubr(subrSub), g_env)
+addToEnv(makeSym('/'), makeSubr(subrDiv), g_env)
+addToEnv(makeSym('mod'), makeSubr(subrMod), g_env)
 addToEnv(makeSym('t'), makeSym('t'), g_env)
 
 while True:
     try:
+        print '> ',
         exp, _ = read(raw_input())
         print printObj(eval1(exp, g_env))
     except (EOFError):
