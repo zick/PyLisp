@@ -68,9 +68,10 @@ def skipSpaces(str):
     return re.sub('^\s+', '', str)
 
 def makeNumOrSym(str):
-  if re.search('^[+-]?\d+$', str):
-      return makeNum(int(str))
-  return makeSym(str)
+    try:
+        return makeNum(int(str))
+    except:
+        return makeSym(str)
 
 def readAtom(str):
     next = ''
@@ -105,7 +106,7 @@ def readList(str):
             break
         elm, next = read(str)
         if elm['tag'] == 'error':
-            return elm
+            return elm, next
         ret = makeCons(elm, ret)
         str = next
     return nreverse(ret), str[1:]
@@ -127,10 +128,10 @@ def printList(obj):
     first = True
     while obj['tag'] == 'cons':
         if first:
-            ret = printObj(obj['car'])
             first = False
         else:
-            ret += ' ' + printObj(obj['car'])
+            ret += ' '
+        ret = printObj(obj['car'])
         obj = obj['cdr']
     if obj['tag'] == 'nil':
         return '(%s)' % ret
@@ -294,7 +295,7 @@ addToEnv(makeSym('t'), makeSym('t'), g_env)
 
 while True:
     try:
-        print '> ',
+        print '>',
         exp, _ = read(raw_input())
         print printObj(eval1(exp, g_env))
     except (EOFError):
