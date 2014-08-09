@@ -1,4 +1,8 @@
 import re
+import sys
+
+# Change recursionlimit if you need more stack.
+sys.setrecursionlimit(10000)
 
 kLPar = '('
 kRPar = ')'
