@@ -33,6 +33,9 @@ sym_if = makeSym('if')
 sym_lambda = makeSym('lambda')
 sym_defun = makeSym('defun')
 sym_setq = makeSym('setq')
+sym_loop = makeSym('loop')
+sym_return = makeSym('return')
+loop_val = kNil
 
 def makeNum(num):
     return { 'tag': 'num', 'data': num }
@@ -174,7 +177,10 @@ def eval1(obj, env):
     if op == sym_quote:
         return safeCar(args)
     elif op == sym_if:
-        if eval1(safeCar(args), env) == kNil:
+        c = eval1(safeCar(args), env)
+        if c['tag'] == 'error':
+            return c
+        elif c == kNil:
             return eval1(safeCar(safeCdr(safeCdr(args))), env)
         return eval1(safeCar(safeCdr(args)), env)
     elif op == sym_lambda:
@@ -186,6 +192,8 @@ def eval1(obj, env):
         return sym
     elif op == sym_setq:
         val = eval1(safeCar(safeCdr(args)), env)
+        if val['tag'] == 'error':
+            return val
         sym = safeCar(args)
         bind = findVar(sym, env)
         if bind == kNil:
@@ -193,6 +201,12 @@ def eval1(obj, env):
         else:
             bind['cdr'] = val
         return val
+    elif op == sym_loop:
+        return loop(args, env)
+    elif op == sym_return:
+        global loop_val
+        loop_val = eval1(safeCar(args), env)
+        return makeError('')
     return apply(eval1(op, env), evlis(args, env), env)
 
 def evlis(lst, env):
@@ -209,8 +223,18 @@ def progn(body, env):
     ret = kNil
     while body['tag'] == 'cons':
         ret = eval1(body['car'], env)
+        if ret['tag'] == 'error':
+            return ret
         body = body['cdr']
     return ret
+
+def loop(body, env):
+    while True:
+        ret = progn(body, env)
+        if ret['tag'] == 'error':
+            if ret['data'] == '':
+                return loop_val
+            return ret
 
 def apply(fn, args, env):
     if fn['tag'] == 'error':
