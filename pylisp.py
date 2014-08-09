@@ -27,6 +27,13 @@ def makeSym(str):
         sym_table[str] = { 'tag': 'sym', 'data': str }
     return sym_table[str]
 
+sym_t = makeSym('t')
+sym_quote = makeSym('quote')
+sym_if = makeSym('if')
+sym_lambda = makeSym('lambda')
+sym_defun = makeSym('defun')
+sym_setq = makeSym('setq')
+
 def makeNum(num):
     return { 'tag': 'num', 'data': num }
 
@@ -92,7 +99,7 @@ def read(str):
         return readList(str[1:])
     elif str[0] == kQuote:
         elm, next = read(str[1:])
-        return makeCons(makeSym('quote'), makeCons(elm, kNil)), next
+        return makeCons(sym_quote, makeCons(elm, kNil)), next
     else:
         return readAtom(str)
 
@@ -164,20 +171,20 @@ def eval1(obj, env):
 
     op = safeCar(obj)
     args = safeCdr(obj)
-    if op == makeSym('quote'):
+    if op == sym_quote:
         return safeCar(args)
-    elif op == makeSym('if'):
+    elif op == sym_if:
         if eval1(safeCar(args), env) == kNil:
             return eval1(safeCar(safeCdr(safeCdr(args))), env)
         return eval1(safeCar(safeCdr(args)), env)
-    elif op == makeSym('lambda'):
+    elif op == sym_lambda:
         return makeExpr(args, env)
-    elif op == makeSym('defun'):
+    elif op == sym_defun:
         expr = makeExpr(safeCdr(args), env)
         sym = safeCar(args)
         addToEnv(sym, expr, g_env)
         return sym
-    elif op == makeSym('setq'):
+    elif op == sym_setq:
         val = eval1(safeCar(safeCdr(args)), env)
         sym = safeCar(args)
         bind = findVar(sym, env)
@@ -232,25 +239,25 @@ def subrEq(args):
     y = safeCar(safeCdr(args))
     if x['tag'] == 'num' and y['tag'] == 'num':
         if x['data'] == y['data']:
-            return makeSym('t')
+            return sym_t
         return kNil
     elif x is y:
-        return makeSym('t')
+        return sym_t
     return kNil
 
 def subrAtom(args):
     if safeCar(args)['tag'] == 'cons':
         return kNil
-    return makeSym('t')
+    return sym_t
 
 def subrNumberp(args):
     if safeCar(args)['tag'] == 'num':
-        return makeSym('t')
+        return sym_t
     return kNil
 
 def subrSymbolp(args):
     if safeCar(args)['tag'] == 'sym':
-        return makeSym('t')
+        return sym_t
     return kNil
 
 def subrAddOrMul(fn, init_val):
@@ -291,7 +298,7 @@ addToEnv(makeSym('*'), makeSubr(subrMul), g_env)
 addToEnv(makeSym('-'), makeSubr(subrSub), g_env)
 addToEnv(makeSym('/'), makeSubr(subrDiv), g_env)
 addToEnv(makeSym('mod'), makeSubr(subrMod), g_env)
-addToEnv(makeSym('t'), makeSym('t'), g_env)
+addToEnv(sym_t, sym_t, g_env)
 
 while True:
     try:
