@@ -145,7 +145,7 @@ def printList(obj):
             first = False
         else:
             ret += ' '
-        ret = printObj(obj['car'])
+        ret += printObj(obj['car'])
         obj = obj['cdr']
     if obj['tag'] == 'nil':
         return '(%s)' % ret
